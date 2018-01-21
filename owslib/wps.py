@@ -253,7 +253,7 @@ class WebProcessingService(object):
         # build metadata objects
         return self._parseProcessMetadata(rootElement)
 
-    def execute(self, identifier, inputs, output=None, request=None, response=None):
+    def execute(self, identifier, inputs, output=None, request=None, response=None, status='true', store_execute='true'):
         """
         Submits a WPS process execution request.
         Returns a WPSExecution object, which can be used to monitor the status of the job, and ultimately retrieve the result.
@@ -272,7 +272,7 @@ class WebProcessingService(object):
 
         # build XML request from parameters
         if request is None:
-            requestElement = execution.buildRequest(identifier, inputs, output)
+            requestElement = execution.buildRequest(identifier, inputs, output, status, store_execute)
             request = etree.tostring(requestElement)
             execution.request = request
         log.debug(request)
@@ -514,7 +514,7 @@ class WPSExecution():
         self.dataInputs = []
         self.processOutputs = []
 
-    def buildRequest(self, identifier, inputs=[], output=None):
+    def buildRequest(self, identifier, inputs=[], output=None, status='true', store_execute='true'):
         """
         Method to build a WPS process request.
         identifier: the requested process identifier
@@ -607,10 +607,10 @@ class WPSExecution():
         if output is not None:
             responseFormElement = etree.SubElement(
                 root, nspath_eval('wps:ResponseForm', namespaces))
-            responseDocumentElement = etree.SubElement(
-                responseFormElement, nspath_eval(
-                    'wps:ResponseDocument', namespaces),
-                                                       attrib={'storeExecuteResponse': 'true', 'status': 'true'})
+            responseDocumentElement = etree.SubElement(responseFormElement,
+                                                       nspath_eval('wps:ResponseDocument', namespaces),
+                                                       attrib={'storeExecuteResponse': store_execute,
+                                                               'status': status})
             if isinstance(output, str):
                 self._add_output(
                     responseDocumentElement, output, asReference=True)
