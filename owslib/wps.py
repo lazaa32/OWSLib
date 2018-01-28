@@ -253,7 +253,7 @@ class WebProcessingService(object):
         # build metadata objects
         return self._parseProcessMetadata(rootElement)
 
-    def execute(self, identifier, inputs, output=None, request=None, response=None, status='true', store_execute='true'):
+    def execute(self, identifier, inputs, output=None, async=True, lineage=False, request=None, response=None):
         """
         Submits a WPS process execution request.
         Returns a WPSExecution object, which can be used to monitor the status of the job, and ultimately retrieve the result.
@@ -272,7 +272,7 @@ class WebProcessingService(object):
 
         # build XML request from parameters
         if request is None:
-            requestElement = execution.buildRequest(identifier, inputs, output, status, store_execute)
+            requestElement = execution.buildRequest(identifier, inputs, output=output, async=async, lineage=lineage)
             request = etree.tostring(requestElement)
             execution.request = request
         log.debug(request)
@@ -514,7 +514,7 @@ class WPSExecution():
         self.dataInputs = []
         self.processOutputs = []
 
-    def buildRequest(self, identifier, inputs=[], output=None, status='true', store_execute='true'):
+    def buildRequest(self, identifier, inputs=[], output=None, async=True, lineage=False):
         """
         Method to build a WPS process request.
         identifier: the requested process identifier
@@ -609,8 +609,9 @@ class WPSExecution():
                 root, nspath_eval('wps:ResponseForm', namespaces))
             responseDocumentElement = etree.SubElement(responseFormElement,
                                                        nspath_eval('wps:ResponseDocument', namespaces),
-                                                       attrib={'storeExecuteResponse': store_execute,
-                                                               'status': status})
+                                                       attrib={'storeExecuteResponse': str(async).lower(),
+                                                               'status': str(async).lower(),
+                                                               'lineage': str(lineage).lower()})
             if isinstance(output, str):
                 self._add_output(
                     responseDocumentElement, output, asReference=True)
